@@ -41,7 +41,7 @@ import threading
 import time
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs, quote
+from urllib.parse import urlparse, parse_qs, quote, unquote
 
 PORT = 8080
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -153,6 +153,27 @@ def _save_profiles(ids):
 
 def _person_dir(pid):
     return os.path.join(PEOPLE_DIR, pid)
+
+
+def _resources_dir(pid):
+    return os.path.join(PEOPLE_DIR, pid, "resources")
+
+
+# 原文件编辑：允许的扩展名与大小上限
+EDITABLE_EXT = {".txt", ".md", ".json"}
+MAX_TEXT_EDIT = 2 * 1024 * 1024
+
+
+def _person_file_path(pid, rel):
+    """校验人物目录下的相对路径，防止目录穿越。合法返回绝对路径，否则 None。"""
+    rel = rel.replace("\\", "/").strip("/")
+    if not rel or any(seg in ("", ".", "..") for seg in rel.split("/")):
+        return None
+    if os.path.splitext(rel)[1].lower() not in EDITABLE_EXT:
+        return None
+    pd = os.path.normpath(_person_dir(pid))
+    fp = os.path.normpath(os.path.join(pd, rel))
+    return fp if fp.startswith(pd + os.sep) else None
 
 
 def _read_text(path):
@@ -325,6 +346,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _serve_static(self, path):
+        path = unquote(path)  # 浏览器会把中文路径编码成 %XX，需还原后再找文件
         rel = path.lstrip("/")
         if not rel or path.endswith("/"):
             rel = (rel + "/index.html").lstrip("/")
@@ -432,6 +454,63 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/admin/people":
             self._send(200, {"people": _list_people()})
+            return
+
+        # 资源文件列表
+        m = re.match(r"^/api/admin/people/([^/]+)/resources$", path)
+        if m:
+            pid = unquote(m.group(1))
+            if not ID_RE.match(pid) or not os.path.isdir(_person_dir(pid)):
+                self._send(404, {"error": "人物不存在"})
+                return
+            rd = _resources_dir(pid)
+            files = []
+            if os.path.isdir(rd):
+                for name in sorted(os.listdir(rd)):
+                    fp = os.path.join(rd, name)
+                    if os.path.isfile(fp):
+                        files.append({"name": name, "size": os.path.getsize(fp),
+                                      "mtime": datetime.fromtimestamp(os.path.getmtime(fp)).strftime("%Y-%m-%d %H:%M")})
+            self._send(200, {"files": files})
+            return
+
+        # 目录预览（递归列出人物目录下全部文件）
+        m = re.match(r"^/api/admin/people/([^/]+)/files$", path)
+        if m:
+            pid = unquote(m.group(1))
+            if not ID_RE.match(pid) or not os.path.isdir(_person_dir(pid)):
+                self._send(404, {"error": "人物不存在"})
+                return
+            pd = _person_dir(pid)
+            files = []
+            for root, _dirs, names in os.walk(pd):
+                for name in names:
+                    fp = os.path.join(root, name)
+                    rel = os.path.relpath(fp, pd).replace("\\", "/")
+                    files.append({
+                        "path": rel,
+                        "size": os.path.getsize(fp),
+                        "editable": os.path.splitext(name)[1].lower() in EDITABLE_EXT,
+                        "mtime": datetime.fromtimestamp(os.path.getmtime(fp)).strftime("%Y-%m-%d %H:%M"),
+                    })
+            files.sort(key=lambda f: f["path"])
+            self._send(200, {"files": files})
+            return
+
+        # 读取原文件内容（仅 txt/md/json）
+        m = re.match(r"^/api/admin/people/([^/]+)/file/(.+)$", path)
+        if m:
+            pid = unquote(m.group(1))
+            fp = _person_file_path(pid, unquote(m.group(2)))
+            if not fp or not os.path.isfile(fp):
+                self._send(404, {"error": "文件不存在或不可编辑"})
+                return
+            if os.path.getsize(fp) > MAX_TEXT_EDIT:
+                self._send(413, {"error": "文件过大，不支持在线编辑（上限 2MB）"})
+                return
+            with open(fp, "r", encoding="utf-8") as f:
+                content = f.read()
+            self._send(200, {"path": unquote(m.group(2)).replace("\\", "/").strip("/"), "content": content})
             return
 
         m = re.match(r"^/api/admin/people/([^/]+)$", path)
@@ -636,6 +715,55 @@ class Handler(BaseHTTPRequestHandler):
             self._send(201, {"ok": True, "id": pid})
             return
 
+        # ---- 资源文件上传（存到 data/people/<id>/resources/，目录不存在自动创建） ----
+        m = re.match(r"^/api/admin/people/([^/]+)/resources$", path)
+        if m:
+            pid = unquote(m.group(1))
+            if not ID_RE.match(pid) or not os.path.isdir(_person_dir(pid)):
+                self._send(404, {"error": "人物不存在"})
+                return
+            ctype = self.headers.get("Content-Type", "")
+            bm = re.search(r'boundary=([^;]+)', ctype)
+            if "multipart/form-data" not in ctype or not bm:
+                self._send(400, {"error": "需要 multipart/form-data 上传"})
+                return
+            declared = int(self.headers.get("Content-Length", 0) or 0)
+            if declared > MAX_UPLOAD + UPLOAD_OVERHEAD:
+                self._send(413, {"error": "文件过大，上限 200MB"})
+                return
+            body = self.rfile.read(declared) if declared else b""
+            try:
+                parts = _parse_multipart(body, bm.group(1).strip('"').encode("latin-1"))
+            except Exception:
+                self._send(400, {"error": "上传数据解析失败"})
+                return
+            filename, payload = parts.get("file", (None, b""))
+            if not filename:
+                self._send(400, {"error": "缺少文件字段 file"})
+                return
+            try:  # 还原 UTF-8 文件名
+                filename = filename.encode("latin-1").decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError, AttributeError):
+                pass
+            if len(payload) > MAX_UPLOAD:
+                self._send(413, {"error": "文件过大，上限 200MB"})
+                return
+            if not payload:
+                self._send(400, {"error": "不能上传空文件"})
+                return
+            orig = _safe_filename(filename)
+            rd = _resources_dir(pid)
+            os.makedirs(rd, exist_ok=True)
+            store = orig
+            if os.path.exists(os.path.join(rd, store)):  # 同名不覆盖，加时间戳
+                stem, ext = os.path.splitext(orig)
+                store = f"{stem}_{datetime.now().strftime('%H%M%S')}{ext}"
+            with open(os.path.join(rd, store), "wb") as f:
+                f.write(payload)
+            self._send(201, {"ok": True, "name": store, "size": len(payload),
+                             "path": f"/data/people/{pid}/resources/{quote(store)}"})
+            return
+
         self._send(404, {"error": "not found"})
 
     # ---------- PUT ----------
@@ -644,6 +772,39 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/admin/") and not self._is_authed():
             self._send(401, {"error": "未登录或会话已过期"})
             return
+
+        # 保存原文件（仅 txt/md/json）
+        m = re.match(r"^/api/admin/people/([^/]+)/file/(.+)$", path)
+        if m:
+            pid = unquote(m.group(1))
+            fp = _person_file_path(pid, unquote(m.group(2)))
+            if not fp:
+                self._send(400, {"error": "路径非法或扩展名不可编辑（仅支持 txt/md/json）"})
+                return
+            data, err = self._read_json_body()
+            if err:
+                self._send(400, {"error": err})
+                return
+            content = data.get("content", "")
+            if not isinstance(content, str):
+                self._send(400, {"error": "content 必须是字符串"})
+                return
+            encoded = content.encode("utf-8")
+            if len(encoded) > MAX_TEXT_EDIT:
+                self._send(413, {"error": "内容过大，上限 2MB"})
+                return
+            if fp.lower().endswith(".json"):
+                try:
+                    json.loads(content)
+                except (ValueError, UnicodeDecodeError) as e:
+                    self._send(400, {"error": f"JSON 校验失败，未保存：{e}"})
+                    return
+            os.makedirs(os.path.dirname(fp), exist_ok=True)
+            with open(fp, "w", encoding="utf-8", newline="") as f:
+                f.write(content)
+            self._send(200, {"ok": True, "path": unquote(m.group(2)).replace("\\", "/").strip("/")})
+            return
+
         m = re.match(r"^/api/admin/people/([^/]+)$", path)
         if not m:
             self._send(404, {"error": "not found"})
@@ -718,6 +879,23 @@ class Handler(BaseHTTPRequestHandler):
                 if os.path.isfile(fp):
                     os.remove(fp)
                 _save_contribs([i for i in items if i.get("id") != item["id"]])
+            self._send(200, {"ok": True})
+            return
+
+        # 删除资料资源文件
+        m = re.match(r"^/api/admin/people/([^/]+)/resources/(.+)$", path)
+        if m:
+            pid = unquote(m.group(1))
+            name = _safe_filename(unquote(m.group(2)))
+            if not ID_RE.match(pid):
+                self._send(400, {"error": "非法的人物 ID"})
+                return
+            rd = os.path.normpath(_resources_dir(pid))
+            fp = os.path.normpath(os.path.join(rd, name))
+            if not fp.startswith(rd) or not os.path.isfile(fp):
+                self._send(404, {"error": "文件不存在"})
+                return
+            os.remove(fp)
             self._send(200, {"ok": True})
             return
 

@@ -108,6 +108,31 @@
         .field input { width: 100%; }
         .field-full { grid-column: 1 / -1; }
         .bio-editor { width: 100%; min-height: 320px; font-family: Consolas, 'Courier New', monospace; font-size: .88rem; resize: vertical; }
+
+        /* 资源文件 */
+        .res-upload-row { display: flex; gap: .6rem; align-items: center; margin-bottom: .5rem; }
+        .res-list { display: flex; flex-direction: column; gap: .3rem; max-height: 220px; overflow-y: auto; }
+        .res-item { display: flex; align-items: center; gap: .6rem; background: var(--light-gray); border-radius: 8px; padding: .4rem .7rem; font-size: .88rem; }
+        .res-name { flex: 1; word-break: break-all; font-family: Consolas, monospace; }
+        .res-meta { color: var(--text-light); white-space: nowrap; font-size: .8rem; }
+        .res-ops { display: flex; gap: .3rem; }
+        .res-ops .btn { text-decoration: none; }
+
+        /* 目录预览与原文件编辑 */
+        .dir-tree { display: flex; flex-direction: column; gap: .15rem; max-height: 240px; overflow-y: auto;
+            background: var(--light-gray); border-radius: 8px; padding: .5rem .6rem; }
+        .dir-item { display: flex; align-items: center; gap: .5rem; font-size: .86rem; font-family: Consolas, monospace;
+            padding: .15rem .3rem; border-radius: 6px; }
+        .dir-item:hover { background: var(--light-blue); }
+        .dir-item .fpath { flex: 1; word-break: break-all; }
+        .dir-item .fmeta { color: var(--text-light); font-size: .75rem; white-space: nowrap; }
+        .file-editor { margin-top: .5rem; }
+        .fe-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .3rem; flex-wrap: wrap; }
+        .fe-path { font-family: Consolas, monospace; font-size: .85rem; color: var(--klein-blue); word-break: break-all; }
+        .fe-text { width: 100%; min-height: 280px; font-family: Consolas, monospace; font-size: .85rem;
+            border: 1px solid var(--border-light); border-radius: 8px; padding: .6rem .8rem; outline: none;
+            background: #fafcff; resize: vertical; }
+        .fe-text:focus { border-color: var(--sky-blue); background: var(--pure-white); }
         .avatar-row { display: flex; align-items: center; gap: 1rem; }
         .avatar-preview { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-light); }
         .editor-actions { display: flex; gap: .7rem; margin-top: 1.2rem; align-items: center; }
@@ -392,6 +417,31 @@
                         <textarea id="fSources" rows="3" style="font-family:Consolas,monospace; font-size:.85rem;">${esc((info.sources || []).join('\n'))}</textarea></div>
                     <div class="field field-full"><label>生平介绍 bio.md（Markdown，前台按行渲染）</label>
                         <textarea id="fBio" class="bio-editor">${esc(bio || '')}</textarea></div>
+                    <div class="field field-full"><label>资源文件 resources/（图片用 ![名](路径)，视频及其他用 [名](路径)）</label>
+                        ${pid ? `
+                        <div class="res-upload-row">
+                            <input type="file" id="fResFiles" multiple style="font-size:.85rem;">
+                            <button class="btn btn-primary btn-mini" id="btnUploadRes" type="button">上传到 resources/</button>
+                            <span class="save-msg" id="resMsg"></span>
+                        </div>
+                        <div id="resList" class="res-list"><span class="empty-tip">加载中…</span></div>
+                        ` : '<div class="empty-tip">新建人物保存后即可上传资源文件</div>'}
+                    </div>
+                    <div class="field field-full"><label>目录预览 / 原文件编辑（可编辑：txt / md / json，≤2MB；其他文件可打开查看）</label>
+                        ${pid ? `
+                        <div id="dirTree" class="dir-tree"><span class="empty-tip">加载中…</span></div>
+                        <div id="fileEditor" class="file-editor" style="display:none;">
+                            <div class="fe-head">
+                                <span class="fe-path" id="fePath"></span>
+                                <span class="fe-ops">
+                                    <button class="btn btn-primary btn-mini" id="btnFeSave" type="button">保存原文件</button>
+                                    <button class="btn btn-plain btn-mini" id="btnFeClose" type="button">关闭编辑器</button>
+                                </span>
+                            </div>
+                            <textarea id="feText" class="fe-text" spellcheck="false"></textarea>
+                        </div>
+                        ` : '<div class="empty-tip">新建人物保存后即可使用目录预览与原文件编辑</div>'}
+                    </div>
                 </div>
                 <div class="editor-actions">
                     <button class="btn btn-primary" id="btnSavePerson">保存资料卡</button>
@@ -428,6 +478,8 @@
                 document.getElementById('fAvatar').addEventListener('change', previewAvatar);
                 document.getElementById('btnSavePerson').addEventListener('click', savePerson);
                 bindAvatarFile(pid);
+                bindResources(pid);
+                bindDirTools(pid);
             } catch (e) {
                 area.innerHTML = '<div class="empty-tip">加载失败</div>';
             }
@@ -528,6 +580,158 @@
             loadPeople();
         });
         document.getElementById('personSearch').addEventListener('input', loadPeople);
+
+        // ================= 资源文件 =================
+        const IMG_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+        const MAX_RES = 200 * 1024 * 1024;
+
+        function resMarkdown(pid, name) {
+            const ext = (name.split('.').pop() || '').toLowerCase();
+            const p = '/data/people/' + pid + '/resources/' + name;
+            return IMG_EXT.includes(ext) ? '![' + name + '](' + p + ')' : '[' + name + '](' + p + ')';
+        }
+
+        async function loadResources(pid) {
+            const list = document.getElementById('resList');
+            if (!list) return;
+            try {
+                const res = await fetch('/api/admin/people/' + encodeURIComponent(pid) + '/resources').then(guard);
+                const data = await res.json();
+                if (!data.files.length) {
+                    list.innerHTML = '<div class="empty-tip">暂无资源文件</div>';
+                    return;
+                }
+                list.innerHTML = data.files.map(f => `
+                    <div class="res-item">
+                        <span class="res-name" title="${esc(f.name)}">${esc(f.name)}</span>
+                        <span class="res-meta">${fmtSize(f.size)} · ${esc(f.mtime)}</span>
+                        <span class="res-ops">
+                            <button class="btn btn-plain btn-mini" onclick="insertRes('${esc(pid)}', '${esc(f.name)}')">插入bio</button>
+                            <a class="btn btn-plain btn-mini" href="/data/people/${encodeURIComponent(pid)}/resources/${encodeURIComponent(f.name)}" target="_blank" rel="noopener">打开</a>
+                            <button class="btn btn-danger btn-mini" onclick="delRes('${esc(pid)}', '${esc(f.name)}')">删除</button>
+                        </span>
+                    </div>`).join('');
+            } catch (e) {
+                list.innerHTML = '<div class="empty-tip">加载失败</div>';
+            }
+        }
+
+        window.insertRes = function (pid, name) {
+            const ta = document.getElementById('fBio');
+            if (!ta) return;
+            const snip = '\n' + resMarkdown(pid, name) + '\n';
+            const pos = (ta.selectionStart != null) ? ta.selectionStart : ta.value.length;
+            ta.value = ta.value.slice(0, pos) + snip + ta.value.slice(pos);
+            toast('已插入到 bio.md，记得保存');
+        };
+
+        window.delRes = async function (pid, name) {
+            if (!confirm('确定删除资源文件 "' + name + '" 吗？')) return;
+            const res = await fetch('/api/admin/people/' + encodeURIComponent(pid) + '/resources/' + encodeURIComponent(name), { method: 'DELETE' });
+            if (res.ok) { toast('资源文件已删除'); loadResources(pid); } else toast('删除失败');
+        };
+
+        function bindResources(pid) {
+            const btn = document.getElementById('btnUploadRes');
+            if (!btn) return;
+            loadResources(pid);
+            btn.addEventListener('click', async function () {
+                const input = document.getElementById('fResFiles');
+                const msg = document.getElementById('resMsg');
+                const files = Array.from(input.files || []);
+                if (!files.length) { msg.textContent = '请先选择文件'; msg.className = 'save-msg err'; return; }
+                btn.disabled = true;
+                let ok = 0, fail = 0, failMsg = '';
+                for (const f of files) {
+                    if (f.size > MAX_RES) { fail++; failMsg = f.name + ' 超过200MB'; continue; }
+                    const fd = new FormData();
+                    fd.append('file', f, f.name);
+                    try {
+                        const res = await fetch('/api/admin/people/' + encodeURIComponent(pid) + '/resources', { method: 'POST', body: fd });
+                        if (res.ok) { ok++; } else { fail++; const d = await res.json().catch(() => ({})); failMsg = d.error || f.name; }
+                    } catch (e) { fail++; failMsg = '网络错误'; }
+                }
+                btn.disabled = false;
+                input.value = '';
+                msg.textContent = '✓ 成功 ' + ok + ' 个' + (fail ? '，失败 ' + fail + ' 个（' + failMsg + '）' : '');
+                msg.className = fail ? 'save-msg err' : 'save-msg ok';
+                loadResources(pid);
+            });
+        }
+
+        // ================= 目录预览与原文件编辑 =================
+        let feCurrentPid = null;
+        let feCurrentPath = null;
+
+        function fileIcon(p) {
+            if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(p)) return '🖼️';
+            if (/\.(mp4|webm|mov|m4v|avi|mkv)$/i.test(p)) return '🎬';
+            if (/\.(md|txt)$/i.test(p)) return '📝';
+            if (/\.json$/i.test(p)) return '🧩';
+            return '📄';
+        }
+
+        async function loadDirTree(pid) {
+            feCurrentPid = pid;
+            feCurrentPath = null;
+            const tree = document.getElementById('dirTree');
+            const ed = document.getElementById('fileEditor');
+            if (ed) ed.style.display = 'none';
+            try {
+                const res = await fetch('/api/admin/people/' + encodeURIComponent(pid) + '/files').then(guard);
+                const data = await res.json();
+                if (!data.files.length) { tree.innerHTML = '<div class="empty-tip">目录为空</div>'; return; }
+                tree.innerHTML = data.files.map(f => {
+                    const urlPath = f.path.split('/').map(encodeURIComponent).join('/');
+                    return `
+                    <div class="dir-item">
+                        <span>${fileIcon(f.path)}</span>
+                        <span class="fpath">${esc(f.path)}</span>
+                        <span class="fmeta">${fmtSize(f.size)} · ${esc(f.mtime)}</span>
+                        ${f.editable ? `<button class="btn btn-plain btn-mini" onclick="openFileEditor('${esc(pid)}', '${esc(f.path)}')">编辑</button>` : ''}
+                        <a class="btn btn-plain btn-mini" href="/data/people/${encodeURIComponent(pid)}/${urlPath}" target="_blank" rel="noopener">打开</a>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                tree.innerHTML = '<div class="empty-tip">加载失败</div>';
+            }
+        }
+
+        window.openFileEditor = async function (pid, fpath) {
+            try {
+                const res = await fetch('/api/admin/people/' + encodeURIComponent(pid) + '/file/' + fpath.split('/').map(encodeURIComponent).join('/')).then(guard);
+                const data = await res.json();
+                feCurrentPid = pid;
+                feCurrentPath = fpath;
+                document.getElementById('fePath').textContent = fpath;
+                document.getElementById('feText').value = data.content;
+                document.getElementById('fileEditor').style.display = 'block';
+                document.getElementById('fileEditor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (e) {
+                toast('读取失败');
+            }
+        };
+
+        async function saveFileEditor() {
+            if (!feCurrentPid || !feCurrentPath) return;
+            const content = document.getElementById('feText').value;
+            try {
+                const res = await fetch('/api/admin/people/' + encodeURIComponent(feCurrentPid) + '/file/' + feCurrentPath.split('/').map(encodeURIComponent).join('/'), {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content })
+                });
+                const d = await res.json().catch(() => ({}));
+                if (res.ok) { toast('已保存 ' + feCurrentPath); loadDirTree(feCurrentPid); }
+                else toast(d.error || '保存失败');
+            } catch (e) { toast('网络错误'); }
+        }
+
+        function bindDirTools(pid) {
+            loadDirTree(pid);
+            const s = document.getElementById('btnFeSave');
+            const c = document.getElementById('btnFeClose');
+            if (s) s.addEventListener('click', saveFileEditor);
+            if (c) c.addEventListener('click', () => { document.getElementById('fileEditor').style.display = 'none'; });
+        }
 
         // ================= 投稿管理 =================
         function fmtSize(n) {
