@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投稿 - 星语铭</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .contrib-card {
+            background: var(--pure-white);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 20px var(--shadow);
+            max-width: 640px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .contrib-card h2 { text-align: center; margin-bottom: 1.2rem; font-weight: 400; }
+        .contrib-tip { text-align: center; color: var(--text-light); font-size: .9rem; margin-bottom: 1.5rem; }
+        .contrib-form { display: flex; flex-direction: column; gap: .8rem; }
+        .contrib-form input[type=text], .contrib-form textarea {
+            border: 1px solid var(--border-light); border-radius: 8px; padding: .6rem .9rem;
+            font: inherit; outline: none; background: var(--light-gray);
+        }
+        .contrib-form input:focus, .contrib-form textarea:focus { border-color: var(--sky-blue); background: var(--pure-white); }
+        .contrib-form textarea { min-height: 70px; resize: vertical; }
+        .file-zone {
+            border: 2px dashed var(--border-light); border-radius: 10px; padding: 1.6rem 1rem;
+            text-align: center; color: var(--text-light); cursor: pointer; transition: all .2s;
+        }
+        .file-zone:hover, .file-zone.drag { border-color: var(--coral-pink); background: var(--light-blue); color: var(--klein-blue); }
+        .file-zone b { color: var(--klein-blue); }
+        .file-selected { color: var(--text-dark); font-size: .92rem; background: var(--light-gray); border-radius: 8px; padding: .6rem .9rem; word-break: break-all; }
+        .progress-wrap { display: none; background: var(--light-gray); border-radius: 8px; height: 14px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; background: linear-gradient(45deg, var(--sky-blue), var(--coral-pink)); transition: width .2s; }
+        .progress-text { font-size: .85rem; color: var(--text-light); text-align: center; }
+        .contrib-msg { text-align: center; font-size: .92rem; min-height: 1.4em; }
+        .contrib-msg.ok { color: #2e9e5b; }
+        .contrib-msg.err { color: #D32F2F; }
+        .contrib-btn { align-self: center; min-width: 200px; }
+        .contrib-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">星语铭</div>
+            <ul class="nav-links">
+                <li><a href="/admin">后台管理</a></li>
+                <li><a href="/contribute.html">投稿</a></li>
+                <li><a href="/">主页</a></li>
+                <li><a href="/about.html">关于我们</a></li>
+                <li><a href="/compliance.html">合规声明</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="contrib-card">
+                <h2>📮 投稿提交</h2>
+                <div class="contrib-tip">
+                    欢迎分享与逝者相关的照片、文章、音频等任何资料。<br>
+                    所有类型的文件均可上传，单个文件上限 <b>200MB</b>。资料仅管理员可见。
+                </div>
+                <form class="contrib-form" id="contribForm">
+                    <input type="text" id="fName" maxlength="32" placeholder="你的昵称（留空则为匿名）">
+                    <textarea id="fNote" maxlength="200" placeholder="备注说明（可选）：这份资料是什么、与谁有关…"></textarea>
+                    <div class="file-zone" id="fileZone">
+                        点击选择文件，或把文件拖到这里<br>
+                        <small>任意类型均可 · 单文件 ≤ 200MB</small>
+                    </div>
+                    <input type="file" id="fFile" required style="display:none;">
+                    <div class="file-selected" id="fileInfo" style="display:none;"></div>
+                    <div class="progress-wrap" id="progWrap"><div class="progress-bar" id="progBar"></div></div>
+                    <div class="progress-text" id="progText"></div>
+                    <button type="submit" class="btn contrib-btn" id="btnSubmit">送出投稿</button>
+                    <div class="contrib-msg" id="contribMsg"></div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container" style="text-align:center; padding: 2rem 0; color: var(--text-light); font-size: .88rem;">
+            星语铭纪念计划 · 愿所有灵魂，终将在没有黑暗的地方重逢
+        </div>
+    </footer>
+
+    <script>
+    (function () {
+        var MAX = 200 * 1024 * 1024;
+        var fileInput = document.getElementById('fFile');
+        var zone = document.getElementById('fileZone');
+        var info = document.getElementById('fileInfo');
+        var msg = document.getElementById('contribMsg');
+        var btn = document.getElementById('btnSubmit');
+        var progWrap = document.getElementById('progWrap');
+        var progBar = document.getElementById('progBar');
+        var progText = document.getElementById('progText');
+
+        function fmtSize(n) {
+            if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+            if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
+            return n + ' B';
+        }
+
+        function pickFile(f) {
+            msg.textContent = ''; msg.className = 'contrib-msg';
+            if (!f) return;
+            if (f.size > MAX) {
+                info.style.display = 'none';
+                msg.textContent = '文件过大（' + fmtSize(f.size) + '），投稿上限 200MB';
+                msg.className = 'contrib-msg err';
+                fileInput.value = '';
+                return;
+            }
+            fileInput.files = new DataTransfer().files; // 清空
+            info.style.display = 'block';
+            info.textContent = '已选择：' + f.name + '（' + fmtSize(f.size) + '）';
+        }
+
+        zone.addEventListener('click', function () { fileInput.click(); });
+        fileInput.addEventListener('change', function () { pickFile(this.files[0]); });
+        ['dragover', 'dragenter'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('drag'); });
+        });
+        ['dragleave', 'drop'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('drag'); });
+        });
+        zone.addEventListener('drop', function (e) {
+            var f = e.dataTransfer.files[0];
+            try {
+                var dt = new DataTransfer(); dt.items.add(f); fileInput.files = dt.files;
+            } catch (err) { fileInput.files = e.dataTransfer.files; }
+            pickFile(f);
+        });
+
+        document.getElementById('contribForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var f = fileInput.files[0];
+            if (!f) { msg.textContent = '请先选择文件'; msg.className = 'contrib-msg err'; return; }
+            if (f.size > MAX) { msg.textContent = '文件超过 200MB 上限'; msg.className = 'contrib-msg err'; return; }
+
+            var fd = new FormData();
+            fd.append('name', document.getElementById('fName').value.trim());
+            fd.append('note', document.getElementById('fNote').value.trim());
+            fd.append('file', f, f.name);
+
+            btn.disabled = true;
+            progWrap.style.display = 'block';
+            msg.textContent = ''; msg.className = 'contrib-msg';
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/contribute');
+            xhr.upload.onprogress = function (ev) {
+                if (ev.lengthComputable) {
+                    var pct = Math.round(ev.loaded / ev.total * 100);
+                    progBar.style.width = pct + '%';
+                    progText.textContent = '上传中 ' + pct + '%（' + fmtSize(ev.loaded) + ' / ' + fmtSize(ev.total) + '）';
+                }
+            };
+            xhr.onload = function () {
+                btn.disabled = false;
+                var data = {};
+                try { data = JSON.parse(xhr.responseText); } catch (err) {}
+                if (xhr.status === 201) {
+                    progText.textContent = '';
+                    msg.textContent = '✓ 投稿成功！编号 ' + data.id + '，感谢你的分享 🌸';
+                    msg.className = 'contrib-msg ok';
+                    fileInput.value = ''; info.style.display = 'none';
+                    document.getElementById('fNote').value = '';
+                    progWrap.style.display = 'none';
+                } else {
+                    msg.textContent = data.error || ('提交失败（HTTP ' + xhr.status + '）');
+                    msg.className = 'contrib-msg err';
+                    progWrap.style.display = 'none';
+                }
+            };
+            xhr.onerror = function () {
+                btn.disabled = false;
+                progWrap.style.display = 'none';
+                msg.textContent = '网络错误，请稍后重试';
+                msg.className = 'contrib-msg err';
+            };
+            xhr.send(fd);
+        });
+    })();
+    </script>
+</body>
+</html>

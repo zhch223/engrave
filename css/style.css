@@ -1,0 +1,705 @@
+/* 星语铭 - Modern Minimalist Design */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --light-blue: #E3F2FD;
+    --sky-blue: #87CEEB;
+    --klein-blue: #002FA7;
+    --light-pink: #FFE4E1;
+    --coral-pink: #FFB6C1;
+    --pure-white: #FFFFFF;
+    --light-gray: #F8F9FA;
+    --text-dark: #2C3E50;
+    --text-light: #6C757D;
+    --shadow: rgba(0, 0, 0, 0.1);
+    --border-light: rgba(135, 206, 235, 0.3);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--text-dark);
+    background: linear-gradient(135deg, var(--light-blue) 0%, var(--pure-white) 50%, var(--light-pink) 100%);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header & Navigation */
+header {
+    background: var(--pure-white);
+    box-shadow: 0 2px 10px var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 300;
+    background: linear-gradient(45deg, var(--sky-blue), var(--coral-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--text-dark);
+    font-weight: 300;
+    transition: color 0.3s ease;
+    position: relative;
+}
+
+.nav-links a:hover {
+    color: var(--sky-blue);
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: -5px;
+    left: 0;
+    background: var(--coral-pink);
+    transition: width 0.3s ease;
+}
+
+.nav-links a:hover::after {
+    width: 100%;
+}
+
+/* Warning Box */
+.warning-box {
+    background: linear-gradient(135deg, #FFF3E0, #FFEBEE);
+    border-left: 4px solid #FF5722;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.warning-box h3 {
+    color: #D32F2F;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.warning-box p {
+    color: var(--text-dark);
+    line-height: 1.7;
+}
+
+/* Introduction Section */
+.intro-section {
+    background: var(--pure-white);
+    border-radius: 12px;
+    padding: 3rem;
+    margin: 2rem 0;
+    box-shadow: 0 4px 20px var(--shadow);
+    text-align: center;
+}
+
+.intro-section h2 {
+    font-size: 2rem;
+    font-weight: 300;
+    margin-bottom: 2rem;
+    background: linear-gradient(45deg, var(--klein-blue), var(--coral-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.intro-content {
+    background: var(--pure-white);
+    padding: 2.5rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px var(--shadow);
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 2.25;
+    color: var(--text-dark);
+    text-align: left;
+    white-space: pre-line;
+}
+
+/* Search Section */
+.search-section {
+    background: var(--pure-white);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.search-form {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-input {
+    flex: 1;
+    max-width: 500px;
+    padding: 12px 20px;
+    border: 2px solid var(--border-light);
+    border-radius: 25px;
+    outline: none;
+    transition: border-color 0.3s ease;
+    font-size: 1rem;
+}
+
+.search-input:focus {
+    border-color: var(--sky-blue);
+}
+
+/* Date Input Styles */
+.date-input {
+    padding: 8px 12px;
+    border: 2px solid var(--border-light);
+    border-radius: 8px;
+    outline: none;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+.date-input:focus {
+    border-color: var(--sky-blue);
+}
+
+/* Profile Cards Grid */
+.profiles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.profile-card {
+    background: var(--pure-white);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px var(--shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    text-align: center;
+}
+
+.profile-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px var(--shadow);
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    object-fit: cover;
+    border: 3px solid var(--light-pink);
+}
+
+.profile-name {
+    font-size: 1.2rem;
+    font-weight: 400;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.profile-bio {
+    color: var(--text-light);
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+/* Prevention Section */
+.prevention-section {
+    background: linear-gradient(135deg, var(--light-blue), var(--light-pink));
+    border-radius: 12px;
+    padding: 3rem;
+    margin: 3rem 0;
+    text-align: center;
+}
+
+.prevention-section h3 {
+    color: var(--klein-blue);
+    margin-bottom: 1.5rem;
+    font-weight: 400;
+}
+
+.prevention-resources {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.resource-card {
+    background: var(--pure-white);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px var(--shadow);
+    flex: 1;
+    min-width: 200px;
+}
+
+.resource-card h4 {
+    color: var(--coral-pink);
+    margin-bottom: 1rem;
+}
+
+.resource-card p {
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+/* Footer */
+footer {
+    background: var(--pure-white);
+    text-align: center;
+    padding: 2rem;
+    margin-top: 4rem;
+    box-shadow: 0 -2px 10px var(--shadow);
+}
+
+footer a {
+    color: var(--sky-blue);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: var(--coral-pink);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nav-links {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: .4rem 1rem;
+    }
+
+    .intro-section {
+        padding: 2rem;
+    }
+
+    .search-form {
+        flex-direction: column;
+    }
+
+    .search-input {
+        width: 100%;
+    }
+
+    .profiles-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .prevention-resources {
+        flex-direction: column;
+    }
+}
+
+/* Profile Page Styles */
+.profile-header {
+    background: var(--pure-white);
+    border-radius: 12px;
+    padding: 3rem;
+    margin: 2rem 0;
+    box-shadow: 0 4px 20px var(--shadow);
+    text-align: center;
+}
+
+.profile-avatar-large {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 5px solid var(--light-pink);
+    margin-bottom: 1.5rem;
+}
+
+.profile-info {
+    margin-top: 2rem;
+}
+
+.profile-info-item {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.profile-bio-section {
+    background: var(--pure-white);
+    border-radius: 12px;
+    padding: 3rem;
+    margin: 2rem 0;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.profile-bio-section p {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.memories-section {
+    background: var(--pure-white);
+    border-radius: 12px;
+    padding: 3rem;
+    margin: 2rem 0;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.memory-item {
+    background: var(--light-gray);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 3px solid var(--coral-pink);
+}
+
+/* Buttons */
+.btn {
+    background: linear-gradient(45deg, var(--sky-blue), var(--coral-pink));
+    color: var(--pure-white);
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Error page */
+.error-container {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.error-container h1 {
+    font-size: 6rem;
+    color: var(--coral-pink);
+    margin-bottom: 1rem;
+}
+
+.error-container p {
+    font-size: 1.2rem;
+    color: var(--text-light);
+    margin-bottom: 2rem;
+}
+
+/* ========== Markdown 内容样式（GitHub 风格）========== */
+
+/* 引用块 */
+.profile-bio-section blockquote {
+    border-left: 4px solid var(--coral-pink);
+    background: var(--light-gray);
+    margin: 1.5em 0;
+    padding: 1em 1.5em;
+    color: var(--text-light);
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+}
+
+.profile-bio-section blockquote p {
+    margin: 0.5em 0;
+}
+
+.profile-bio-section blockquote> :first-child {
+    margin-top: 0;
+}
+
+.profile-bio-section blockquote> :last-child {
+    margin-bottom: 0;
+}
+
+/* 代码块 */
+.profile-bio-section pre {
+    background: #f6f8fa;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    margin: 1em 0;
+}
+
+.profile-bio-section code {
+    background: rgba(135, 206, 235, 0.2);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 85%;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    margin: 0;
+}
+
+.profile-bio-section pre code {
+    background: transparent;
+    padding: 0;
+    font-size: 100%;
+}
+
+/* 表格 */
+.profile-bio-section table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.profile-bio-section table th,
+.profile-bio-section table td {
+    border: 1px solid var(--border-light);
+    padding: 10px 14px;
+    text-align: left;
+}
+
+.profile-bio-section table th {
+    background: var(--light-blue);
+    font-weight: 600;
+    color: var(--klein-blue);
+}
+
+.profile-bio-section table tr:nth-child(even) {
+    background: var(--light-gray);
+}
+
+/* 列表 */
+.profile-bio-section ul,
+.profile-bio-section ol {
+    padding-left: 2em;
+    margin: 1em 0;
+}
+
+.profile-bio-section ul li,
+.profile-bio-section ol li {
+    margin: 0.5em 0;
+    line-height: 1.8;
+}
+
+.profile-bio-section ul {
+    list-style-type: disc;
+}
+
+.profile-bio-section ol {
+    list-style-type: decimal;
+}
+
+/* 标题 */
+.profile-bio-section h1,
+.profile-bio-section h2,
+.profile-bio-section h3,
+.profile-bio-section h4,
+.profile-bio-section h5,
+.profile-bio-section h6 {
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-dark);
+}
+
+.profile-bio-section h1 {
+    font-size: 2em;
+    border-bottom: 2px solid var(--border-light);
+    padding-bottom: 0.3em;
+}
+
+.profile-bio-section h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 0.3em;
+}
+
+.profile-bio-section h3 {
+    font-size: 1.25em;
+}
+
+/* 链接 */
+.profile-bio-section a {
+    color: var(--sky-blue);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.profile-bio-section a:hover {
+    border-bottom-color: var(--coral-pink);
+}
+
+/* 图片 */
+.profile-bio-section img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 1em 0;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+/* 水平线 */
+.profile-bio-section hr {
+    border: none;
+    border-top: 2px solid var(--border-light);
+    margin: 2em 0;
+}
+
+/* 任务列表 */
+.profile-bio-section input[type="checkbox"] {
+    margin-right: 0.5em;
+}
+
+/* 强调 */
+.profile-bio-section strong {
+    font-weight: 600;
+    color: var(--klein-blue);
+}
+
+.profile-bio-section em {
+    font-style: italic;
+    color: var(--text-light);
+}
+
+/* ========== Mobile Optimization (UA Phone) ========== */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 14px;
+    }
+
+    nav {
+        flex-wrap: wrap;
+        gap: .4rem 1rem;
+        padding: .6rem .9rem;
+    }
+
+    .logo {
+        font-size: 1.4rem;
+    }
+
+    .nav-links a {
+        font-size: .9rem;
+    }
+
+    /* 资料页 */
+    .profile-header,
+    .profile-bio-section,
+    .memories-section {
+        padding: 1.5rem;
+        margin: 1.2rem 0;
+    }
+
+    .profile-avatar-large {
+        width: 110px;
+        height: 110px;
+        border-width: 4px;
+        margin-bottom: 1rem;
+    }
+
+    .profile-info-item {
+        font-size: 1rem;
+        word-break: break-all;
+    }
+
+    /* Markdown 正文 */
+    .profile-bio-section h1 {
+        font-size: 1.45em;
+    }
+
+    .profile-bio-section h2 {
+        font-size: 1.25em;
+    }
+
+    .profile-bio-section pre {
+        padding: 12px;
+        font-size: 80%;
+    }
+
+    .profile-bio-section ul,
+    .profile-bio-section ol {
+        padding-left: 1.4em;
+    }
+
+    .profile-bio-section table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .profile-bio-section table th,
+    .profile-bio-section table td {
+        padding: 7px 10px;
+        white-space: nowrap;
+    }
+
+    .memory-item {
+        padding: 1rem;
+    }
+
+    /* 首页声明框 */
+    .warning-box {
+        padding: 1.2rem;
+    }
+
+    /* 错误页 */
+    .error-container h1 {
+        font-size: 4rem;
+    }
+
+    .btn {
+        padding: 10px 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-header,
+    .profile-bio-section,
+    .memories-section {
+        padding: 1.1rem;
+        border-radius: 10px;
+    }
+
+    .profile-avatar-large {
+        width: 96px;
+        height: 96px;
+    }
+
+    .nav-links {
+        gap: .3rem .8rem;
+    }
+
+    .nav-links a {
+        font-size: .85rem;
+    }
+}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - 页面未找到 - 星语铭</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        /* 修复布局问题 - 关键修正 */
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">星语铭</div>
+            <ul class="nav-links">
+                <li><a href="/admin">后台管理</a></li>
+                <li><a href="/contribute.html">投稿</a></li>
+                <li><a href="/">主页</a></li>
+                <li><a href="/about.html">关于我们</a></li>
+                <li><a href="/compliance.html">合规声明</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="error-container">
+                <h1>404</h1>
+                <p>抱歉，您访问的页面不存在</p>
+                <a href="/" class="btn">返回首页</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <!-- 动态年份，避免未来时间 -->
+        <p>&copy; <span id="year"></span> 星语铭 | 非营利性人文记忆计划</p>
+        <p style="font-size: 0.8rem; color: #888;">本站托管于 GitHub Pages | 域名解析由阿里云提供</p>
+    </footer>
+    
+    <script>
+        // 动态年份
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // 初始化加载
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfiles();
+        });
+    </script>
+</body>
+</html>

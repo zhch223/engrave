@@ -1,0 +1,12 @@
+# 敏感与本地数据（不入库）
+backend/auth.json
+backend/messages.json
+backend/contributions.json
+backend/contributions/
+backend/__pycache__/
+
+# 系统与编辑器杂项
+__pycache__/
+*.pyc
+Thumbs.db
+Desktop.ini

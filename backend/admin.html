@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后端管理系统 - 星语铭</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --light-blue: #E3F2FD;
+            --sky-blue: #87CEEB;
+            --klein-blue: #002FA7;
+            --light-pink: #FFE4E1;
+            --coral-pink: #FFB6C1;
+            --pure-white: #FFFFFF;
+            --light-gray: #F8F9FA;
+            --text-dark: #2C3E50;
+            --text-light: #6C757D;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --border-light: rgba(135, 206, 235, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, var(--light-blue) 0%, var(--pure-white) 50%, var(--light-pink) 100%);
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1280px; margin: 0 auto; padding: 0 20px; }
+
+        /* 顶栏 */
+        header { background: var(--pure-white); box-shadow: 0 2px 10px var(--shadow); position: sticky; top: 0; z-index: 100; }
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; }
+        .logo { font-size: 1.8rem; font-weight: 300; background: linear-gradient(45deg, var(--sky-blue), var(--coral-pink));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .logo-sub { font-size: .85rem; color: var(--text-light); font-weight: 300; margin-left: .8rem; }
+
+        /* Tab */
+        .tabs { display: flex; gap: .5rem; margin-top: 1.5rem; }
+        .tab-btn { border: none; border-radius: 10px 10px 0 0; padding: .7rem 1.8rem; font: inherit; font-size: 1rem; cursor: pointer;
+            background: var(--pure-white); color: var(--text-light); box-shadow: 0 2px 8px var(--shadow); transition: all .2s; }
+        .tab-btn.active { background: linear-gradient(45deg, var(--sky-blue), var(--coral-pink)); color: var(--pure-white); }
+        .tab-page { display: none; }
+        .tab-page.active { display: block; }
+
+        .card { background: var(--pure-white); border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 20px var(--shadow); }
+        .card h2 { font-size: 1.15rem; font-weight: 500; margin-bottom: 1rem; }
+
+        /* 统计 */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.2rem; margin-top: 1.5rem; }
+        .stat-card { background: var(--pure-white); border-radius: 12px; padding: 1.4rem; text-align: center; box-shadow: 0 4px 20px var(--shadow); }
+        .stat-num { font-size: 2.2rem; font-weight: 300; background: linear-gradient(45deg, var(--klein-blue), var(--coral-pink));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-label { color: var(--text-light); font-size: .9rem; }
+
+        /* 按钮 & 输入 */
+        .btn { border: none; border-radius: 8px; padding: .55rem 1.2rem; font: inherit; font-size: .92rem; cursor: pointer; transition: all .25s ease; }
+        .btn-primary { background: linear-gradient(45deg, var(--sky-blue), var(--coral-pink)); color: var(--pure-white); }
+        .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+        .btn-plain { background: var(--light-gray); color: var(--text-dark); }
+        .btn-plain:hover { background: var(--light-blue); }
+        .btn-danger { background: var(--pure-white); color: #D32F2F; border: 1px solid #efc2c6; }
+        .btn-danger:hover { background: #FFF0F1; }
+        .btn-mini { padding: .3rem .8rem; font-size: .82rem; }
+
+        input[type=text], textarea, select {
+            border: 1px solid var(--border-light); border-radius: 8px; padding: .55rem .9rem;
+            font: inherit; font-size: .92rem; outline: none; background: var(--light-gray);
+        }
+        input[type=text]:focus, textarea:focus { border-color: var(--sky-blue); background: var(--pure-white); }
+
+        /* 留言管理 */
+        .filter-bar { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; margin-bottom: 1rem; }
+        .filter-bar input { min-width: 180px; }
+        table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+        th { text-align: left; color: var(--text-light); font-weight: 500; padding: .6rem .7rem; border-bottom: 2px solid var(--light-blue); white-space: nowrap; }
+        td { padding: .7rem; border-bottom: 1px solid var(--light-blue); vertical-align: top; }
+        tr:hover td { background: var(--light-gray); }
+        .td-profile { color: var(--klein-blue); font-family: Consolas, monospace; font-size: .85rem; white-space: nowrap; }
+        .td-name { font-weight: 600; white-space: nowrap; }
+        .td-time { color: var(--text-light); font-size: .82rem; white-space: nowrap; }
+        .td-content { word-break: break-word; min-width: 260px; line-height: 1.7; }
+        .profile-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+        .chip { background: var(--light-blue); color: var(--klein-blue); border-radius: 16px; padding: .25rem .9rem; font-size: .85rem; cursor: pointer; transition: background .2s; }
+        .chip:hover { background: var(--coral-pink); color: var(--pure-white); }
+        .chip b { font-weight: 600; }
+        .empty-tip { text-align: center; color: var(--text-light); padding: 2rem 0; }
+
+        /* 资料卡管理 */
+        .person-layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; margin-top: 1.5rem; align-items: start; }
+        .person-list-card { padding: 1rem !important; }
+        .person-list { display: flex; flex-direction: column; gap: .3rem; max-height: 560px; overflow-y: auto; }
+        .person-item { display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+            padding: .5rem .7rem; border-radius: 8px; cursor: pointer; transition: background .15s; font-size: .9rem; }
+        .person-item:hover { background: var(--light-blue); }
+        .person-item.active { background: linear-gradient(45deg, var(--sky-blue), var(--coral-pink)); color: var(--pure-white); }
+        .person-item .badges { display: flex; gap: .25rem; }
+        .badge { font-size: .65rem; border-radius: 4px; padding: 0 .35rem; background: var(--light-blue); color: var(--klein-blue); }
+        .badge.no { background: var(--light-gray); color: var(--text-light); }
+        .person-item.active .badge { background: rgba(255,255,255,.35); color: var(--pure-white); }
+
+        .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem 1rem; }
+        .field { display: flex; flex-direction: column; gap: .25rem; }
+        .field label { font-size: .85rem; color: var(--text-light); }
+        .field input { width: 100%; }
+        .field-full { grid-column: 1 / -1; }
+        .bio-editor { width: 100%; min-height: 320px; font-family: Consolas, 'Courier New', monospace; font-size: .88rem; resize: vertical; }
+        .avatar-row { display: flex; align-items: center; gap: 1rem; }
+        .avatar-preview { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-light); }
+        .editor-actions { display: flex; gap: .7rem; margin-top: 1.2rem; align-items: center; }
+        .save-msg { font-size: .88rem; }
+        .save-msg.ok { color: #2e9e5b; }
+        .save-msg.err { color: #D32F2F; }
+
+        .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+            background: var(--text-dark); color: var(--pure-white); border-radius: 8px; padding: .6rem 1.4rem;
+            font-size: .9rem; opacity: 0; transition: all .3s ease; z-index: 999; pointer-events: none; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* 登录遮罩 */
+        .login-mask { position: fixed; inset: 0; background: linear-gradient(135deg, var(--light-blue) 0%, var(--pure-white) 50%, var(--light-pink) 100%);
+            display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .login-mask.show { display: flex; }
+        .login-box { background: var(--pure-white); border-radius: 16px; padding: 2.2rem 2.5rem; width: 340px;
+            box-shadow: 0 8px 40px var(--shadow); text-align: center; }
+        .login-box .logo { font-size: 2rem; display: block; margin-bottom: .3rem; }
+        .login-box p { color: var(--text-light); font-size: .88rem; margin-bottom: 1.4rem; }
+        .login-box input { width: 100%; margin-bottom: .8rem; border: 1px solid var(--border-light); border-radius: 8px;
+            padding: .6rem .9rem; font: inherit; outline: none; background: var(--light-gray); }
+        .login-box input:focus { border-color: var(--sky-blue); background: var(--pure-white); }
+        .login-err { color: #D32F2F; font-size: .85rem; min-height: 1.2em; margin-bottom: .4rem; }
+        .btn-logout { background: var(--light-gray); color: var(--text-dark); border: 1px solid var(--border-light);
+            border-radius: 8px; padding: .35rem 1rem; font: inherit; font-size: .85rem; cursor: pointer; display: none; }
+        .btn-logout:hover { background: var(--light-blue); }
+
+        /* ========== Mobile Optimization (UA Phone) ========== */
+        @media (max-width: 768px) {
+            .container { padding: 0 12px; }
+            nav { flex-direction: column; gap: .6rem; padding: .9rem .8rem; text-align: center; }
+            nav > div:last-child { flex-direction: column; gap: .4rem; }
+            .tabs { margin-top: 1rem; }
+            .tab-btn { flex: 1; padding: .6rem 1rem; font-size: .92rem; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: .6rem; margin-top: 1rem; }
+            .stat-card { padding: .8rem .4rem; }
+            .stat-num { font-size: 1.5rem; }
+            .stat-label { font-size: .75rem; }
+            .person-layout { grid-template-columns: 1fr; gap: 1rem; }
+            .person-list { max-height: 260px; }
+            .editor-grid { grid-template-columns: 1fr; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .filter-bar input { min-width: 0; width: 100%; }
+            .filter-bar span { display: none; }
+            .filter-bar .btn { width: 100%; }
+            .card { padding: 1rem; margin: 1rem 0; border-radius: 10px; }
+            .login-box { width: calc(100% - 32px); max-width: 340px; padding: 1.6rem 1.4rem; }
+            .bio-editor { min-height: 240px; }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr 1fr 1fr; }
+            .profile-chips { gap: .35rem; }
+            .chip { font-size: .8rem; padding: .2rem .7rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div style="display:flex; align-items:baseline;">
+                <div class="logo">星语铭</div>
+                <span class="logo-sub">后端管理系统</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <div style="font-size:.85rem; color:var(--text-light);">资料卡与留言均保存于本地服务器，前台刷新即生效</div>
+                <button class="btn-logout" id="btnLogout">退出登录</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="messages">留言管理</button>
+            <button class="tab-btn" data-tab="people">资料卡管理</button>
+            <button class="tab-btn" data-tab="contribs">投稿管理</button>
+        </div>
+
+        <!-- ================= 留言管理 ================= -->
+        <div class="tab-page active" id="page-messages">
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card"><div class="stat-num" id="statTotal">–</div><div class="stat-label">留言总数</div></div>
+                <div class="stat-card"><div class="stat-num" id="statProfiles">–</div><div class="stat-label">涉及人物</div></div>
+                <div class="stat-card"><div class="stat-num" id="statToday">–</div><div class="stat-label">今日新增</div></div>
+            </div>
+
+            <div class="card">
+                <h2>人物留言分布 <span style="font-size:.8rem; color:var(--text-light); font-weight:300;">（点击筛选）</span></h2>
+                <div class="profile-chips" id="profileChips"><span class="empty-tip">加载中…</span></div>
+            </div>
+
+            <div class="card">
+                <h2>留言列表</h2>
+                <div class="filter-bar">
+                    <input type="text" id="filterProfile" placeholder="按人物 ID 筛选">
+                    <input type="text" id="filterKeyword" placeholder="搜索昵称 / 内容">
+                    <button class="btn btn-primary" id="btnSearch">查询</button>
+                    <button class="btn btn-plain" id="btnReset">重置</button>
+                    <span style="flex:1"></span>
+                    <button class="btn btn-danger btn-mini" id="btnClearProfile">清空当前人物留言</button>
+                    <button class="btn btn-danger btn-mini" id="btnClearAll">清空全部</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>人物 ID</th><th>昵称</th><th>留言内容</th><th>时间</th><th>操作</th></tr></thead>
+                        <tbody id="msgBody"><tr><td colspan="5" class="empty-tip">加载中…</td></tr></tbody>
+                    </table>
+                </div>
+                <div id="msgCount" style="color:var(--text-light); font-size:.85rem; margin-top:.8rem;"></div>
+            </div>
+        </div>
+
+        <!-- ================= 资料卡管理 ================= -->
+        <div class="tab-page" id="page-people">
+            <div class="person-layout">
+                <!-- 左侧人物列表 -->
+                <div class="card person-list-card">
+                    <div style="display:flex; gap:.5rem; margin-bottom:.8rem;">
+                        <input type="text" id="personSearch" placeholder="搜索人物" style="flex:1; min-width:0;">
+                        <button class="btn btn-primary btn-mini" id="btnNewPerson">新建</button>
+                    </div>
+                    <div class="person-list" id="personList"><span class="empty-tip">加载中…</span></div>
+                </div>
+
+                <!-- 右侧编辑器 -->
+                <div class="card">
+                    <h2 id="editorTitle">资料卡编辑</h2>
+                    <div id="editorArea">
+                        <div class="empty-tip">从左侧选择人物，或点击「新建」</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 投稿管理 ================= -->
+        <div class="tab-page" id="page-contribs">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-num" id="cTotal">–</div><div class="stat-label">投稿总数</div></div>
+                <div class="stat-card"><div class="stat-num" id="cSize" style="font-size:1.5rem;">–</div><div class="stat-label">总大小</div></div>
+            </div>
+            <div class="card">
+                <h2>投稿列表 <span style="font-size:.8rem; color:var(--text-light); font-weight:300;">（点击文件名下载）</span></h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>编号</th><th>文件名</th><th>大小</th><th>投稿人</th><th>备注</th><th>IP</th><th>时间</th><th>操作</th></tr></thead>
+                        <tbody id="contribBody"><tr><td colspan="8" class="empty-tip">加载中…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录遮罩 -->
+    <div class="login-mask" id="loginMask">
+        <div class="login-box">
+            <span class="logo">星语铭</span>
+            <p>后端管理系统 · 请登录</p>
+            <input type="text" id="loginUser" placeholder="用户名" autocomplete="username">
+            <input type="password" id="loginPass" placeholder="密码" autocomplete="current-password">
+            <div class="login-err" id="loginErr"></div>
+            <button class="btn btn-primary" id="btnLogin" style="width:100%;">登 录</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ---------- 工具 ----------
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 1800);
+        }
+
+        // ---------- Tab 切换 ----------
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('page-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ================= 留言管理 =================
+        async function loadStats() {
+            const res = await fetch('/api/admin/stats').then(guard);
+            const data = await res.json();
+            document.getElementById('statTotal').textContent = data.total;
+            document.getElementById('statProfiles').textContent = data.profiles;
+            document.getElementById('statToday').textContent = data.today;
+            const chips = document.getElementById('profileChips');
+            const entries = Object.entries(data.by_profile || {}).sort((a, b) => b[1] - a[1]);
+            chips.innerHTML = entries.length
+                ? entries.map(([p, n]) => `<span class="chip" onclick="filterByProfile('${esc(p)}')">${esc(p)} <b>${n}</b></span>`).join('')
+                : '<span class="empty-tip">暂无留言数据</span>';
+        }
+
+        async function loadMessages() {
+            const profile = document.getElementById('filterProfile').value.trim();
+            const q = document.getElementById('filterKeyword').value.trim();
+            const params = new URLSearchParams();
+            if (profile) params.set('profile', profile);
+            if (q) params.set('q', q);
+            const body = document.getElementById('msgBody');
+            body.innerHTML = '<tr><td colspan="5" class="empty-tip">加载中…</td></tr>';
+            try {
+                const res = await fetch('/api/admin/messages?' + params).then(guard);
+                const data = await res.json();
+                document.getElementById('msgCount').textContent = `共 ${data.total} 条留言`;
+                if (!data.messages.length) {
+                    body.innerHTML = '<tr><td colspan="5" class="empty-tip">🌸 没有匹配的留言</td></tr>';
+                    return;
+                }
+                body.innerHTML = data.messages.map(m => `
+                    <tr>
+                        <td class="td-profile">${esc(m.profile)}</td>
+                        <td class="td-name">${esc(m.name)}</td>
+                        <td class="td-content">${esc(m.content)}</td>
+                        <td class="td-time">${esc(m.time)}</td>
+                        <td><button class="btn btn-danger btn-mini" onclick="delMessage('${esc(m.id)}')">删除</button></td>
+                    </tr>`).join('');
+            } catch (e) {
+                body.innerHTML = '<tr><td colspan="5" class="empty-tip">加载失败</td></tr>';
+            }
+        }
+
+        window.filterByProfile = p => { document.getElementById('filterProfile').value = p; loadMessages(); };
+        window.delMessage = async id => {
+            if (!confirm('确定删除这条留言吗？')) return;
+            const res = await fetch('/api/admin/messages?id=' + encodeURIComponent(id), { method: 'DELETE' });
+            if (res.ok) { toast('已删除'); loadStats(); loadMessages(); } else toast('删除失败');
+        };
+        document.getElementById('btnSearch').addEventListener('click', loadMessages);
+        document.getElementById('btnReset').addEventListener('click', () => {
+            document.getElementById('filterProfile').value = '';
+            document.getElementById('filterKeyword').value = '';
+            loadMessages();
+        });
+        document.getElementById('btnClearProfile').addEventListener('click', async () => {
+            const profile = document.getElementById('filterProfile').value.trim();
+            if (!profile) { toast('请先输入人物 ID'); return; }
+            if (!confirm(`确定清空人物 "${profile}" 的全部留言吗？不可恢复。`)) return;
+            const res = await fetch('/api/admin/clear', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({profile}) });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) { toast(`已清空 ${data.removed} 条`); loadStats(); loadMessages(); } else toast(data.error || '失败');
+        });
+        document.getElementById('btnClearAll').addEventListener('click', async () => {
+            if (!confirm('确定清空全部留言吗？不可恢复！')) return;
+            const res = await fetch('/api/admin/clear', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({all:true}) });
+            if (res.ok) { toast('已清空全部留言'); loadStats(); loadMessages(); } else toast('失败');
+        });
+
+        // ================= 资料卡管理 =================
+        let currentPerson = null;   // null = 新建
+        let peopleCache = [];
+
+        const INFO_FIELDS = ['name','handle','aliases','location','birthDate','passDate','summary'];
+
+        function personFormHTML(pid, info, bio, hasAvatar) {
+            const v = k => esc(info[k] || '');
+            return `
+                <div class="editor-grid">
+                    <div class="field"><label>人物 ID（字母/数字/_-，即文件夹名）</label>
+                        <input type="text" id="fId" value="${esc(pid)}" ${pid ? 'readonly style="background:var(--light-gray);"' : ''}></div>
+                    <div class="field"><label>头像</label>
+                        <div class="avatar-row">
+                            <img class="avatar-preview" id="avatarPreview" src="${hasAvatar ? '/data/people/' + esc(pid) + '/avatar.jpg?t=' + Date.now() : ''}" onerror="this.style.visibility='hidden'" style="${hasAvatar ? '' : 'visibility:hidden'}">
+                            <input type="file" id="fAvatar" accept="image/jpeg,image/png,image/webp" style="font-size:.85rem;">
+                        </div></div>
+                    ${INFO_FIELDS.map(k => `<div class="field"><label>${k}</label><input type="text" id="f_${k}" value="${v(k)}"></div>`).join('')}
+                    <div class="field field-full"><label>链接 websites（每行一个，Markdown 格式：[名称](网址)）</label>
+                        <textarea id="fWebsites" rows="3" style="font-family:Consolas,monospace; font-size:.85rem;">${esc((info.websites || []).join('\n'))}</textarea></div>
+                    <div class="field field-full"><label>引用资料 sources（每行一个，Markdown 格式）</label>
+                        <textarea id="fSources" rows="3" style="font-family:Consolas,monospace; font-size:.85rem;">${esc((info.sources || []).join('\n'))}</textarea></div>
+                    <div class="field field-full"><label>生平介绍 bio.md（Markdown，前台按行渲染）</label>
+                        <textarea id="fBio" class="bio-editor">${esc(bio || '')}</textarea></div>
+                </div>
+                <div class="editor-actions">
+                    <button class="btn btn-primary" id="btnSavePerson">保存资料卡</button>
+                    <span class="save-msg" id="saveMsg"></span>
+                </div>`;
+        }
+
+        async function loadPeople() {
+            const res = await fetch('/api/admin/people').then(guard);
+            const data = await res.json();
+            peopleCache = data.people || [];
+            const kw = document.getElementById('personSearch').value.trim().toLowerCase();
+            const list = document.getElementById('personList');
+            const filtered = kw ? peopleCache.filter(p => p.id.toLowerCase().includes(kw)) : peopleCache;
+            list.innerHTML = filtered.length ? filtered.map(p => {
+                const b = f => `<span class="badge ${f ? '' : 'no'}">${f ? '✓' : '×'}</span>`;
+                return `<div class="person-item ${currentPerson === p.id ? 'active' : ''}" onclick="openPerson('${esc(p.id)}')">
+                            <span style="font-family:Consolas,monospace;">${esc(p.id)}${p.orphan ? ' <span class="badge no">未收录</span>' : ''}</span>
+                            <span class="badges" title="资料卡 / 生平 / 头像">${b(p.hasInfo)}${b(p.hasBio)}${b(p.hasAvatar)}</span>
+                        </div>`;
+            }).join('') : '<span class="empty-tip">无匹配人物</span>';
+        }
+
+        window.openPerson = async function (pid) {
+            currentPerson = pid;
+            document.getElementById('editorTitle').textContent = '资料卡编辑：' + pid;
+            const area = document.getElementById('editorArea');
+            area.innerHTML = '<div class="empty-tip">加载中…</div>';
+            try {
+                const res = await fetch('/api/admin/people/' + encodeURIComponent(pid)).then(guard);
+                const data = await res.json();
+                const p = peopleCache.find(x => x.id === pid) || {};
+                area.innerHTML = personFormHTML(pid, data.info || {}, data.bio || '', p.hasAvatar);
+                document.getElementById('fAvatar').addEventListener('change', previewAvatar);
+                document.getElementById('btnSavePerson').addEventListener('click', savePerson);
+                bindAvatarFile(pid);
+            } catch (e) {
+                area.innerHTML = '<div class="empty-tip">加载失败</div>';
+            }
+            loadPeople();
+        };
+
+        let avatarFile = null;
+        function bindAvatarFile(pid) {
+            document.getElementById('fAvatar').addEventListener('change', function () {
+                avatarFile = this.files[0] || null;
+            });
+        }
+        function previewAvatar(e) { /* 文件预览在 change 中处理 */ }
+
+        function readFileB64(file) {
+            return new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(r.result);
+                r.onerror = reject;
+                r.readAsDataURL(file);
+            });
+        }
+
+        async function savePerson() {
+            const msg = document.getElementById('saveMsg');
+            msg.textContent = ''; msg.className = 'save-msg';
+
+            const pidInput = document.getElementById('fId').value.trim();
+            const g = k => document.getElementById('f_' + k).value.trim();
+            const lines = id => document.getElementById(id).value.split('\n').map(s => s.trim()).filter(Boolean);
+            const bio = document.getElementById('fBio').value;
+
+            const info = {
+                id: pidInput,
+                name: g('name'), handle: g('handle'), aliases: g('aliases'),
+                location: g('location'), birthDate: g('birthDate'), passDate: g('passDate'),
+                summary: g('summary'),
+                websites: lines('fWebsites'),
+                sources: lines('fSources'),
+            };
+
+            const payload = { info, bio };
+            if (avatarFile) {
+                try { payload.avatarB64 = await readFileB64(avatarFile); }
+                catch (e) { msg.textContent = '头像读取失败'; msg.className = 'save-msg err'; return; }
+            }
+
+            try {
+                let res;
+                if (currentPerson) {
+                    res = await fetch('/api/admin/people/' + encodeURIComponent(currentPerson), {
+                        method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+                } else {
+                    res = await fetch('/api/admin/people', {
+                        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: pidInput, ...payload })});
+                }
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    msg.textContent = '✓ 已保存'; msg.className = 'save-msg ok';
+                    toast('资料卡已保存');
+                    currentPerson = pidInput || currentPerson;
+                    avatarFile = null;
+                    loadPeople();
+                    if (!pidInput) {} else {
+                        document.getElementById('fId').setAttribute('readonly', '');
+                        document.getElementById('fId').style.background = 'var(--light-gray)';
+                    }
+                } else {
+                    msg.textContent = data.error || '保存失败'; msg.className = 'save-msg err';
+                }
+            } catch (e) {
+                msg.textContent = '网络错误，请确认后端已启动'; msg.className = 'save-msg err';
+            }
+        }
+
+        window.delPerson = async function (pid) {
+            if (!confirm(`确定删除人物 "${pid}" 吗？其资料目录（含头像、生平）将被删除，不可恢复！`)) return;
+            const res = await fetch('/api/admin/people/' + encodeURIComponent(pid), { method: 'DELETE' });
+            if (res.ok) {
+                toast('已删除 ' + pid);
+                if (currentPerson === pid) {
+                    currentPerson = null;
+                    document.getElementById('editorTitle').textContent = '资料卡编辑';
+                    document.getElementById('editorArea').innerHTML = '<div class="empty-tip">从左侧选择人物，或点击「新建」</div>';
+                }
+                loadPeople();
+            } else toast('删除失败');
+        };
+
+        document.getElementById('btnNewPerson').addEventListener('click', () => {
+            currentPerson = null;
+            avatarFile = null;
+            document.getElementById('editorTitle').textContent = '资料卡编辑：新建人物';
+            const area = document.getElementById('editorArea');
+            area.innerHTML = personFormHTML('', {}, '', false);
+            document.getElementById('fAvatar').addEventListener('change', () => { avatarFile = document.getElementById('fAvatar').files[0] || null; });
+            document.getElementById('btnSavePerson').addEventListener('click', savePerson);
+            loadPeople();
+        });
+        document.getElementById('personSearch').addEventListener('input', loadPeople);
+
+        // ================= 投稿管理 =================
+        function fmtSize(n) {
+            if (n >= 1073741824) return (n / 1073741824).toFixed(2) + ' GB';
+            if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+            if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
+            return n + ' B';
+        }
+
+        async function loadContribs() {
+            const body = document.getElementById('contribBody');
+            try {
+                const res = await fetch('/api/admin/contributions').then(guard);
+                const data = await res.json();
+                document.getElementById('cTotal').textContent = data.total;
+                document.getElementById('cSize').textContent = fmtSize(data.totalSize || 0);
+                if (!data.items.length) {
+                    body.innerHTML = '<tr><td colspan="8" class="empty-tip">🌸 暂无投稿</td></tr>';
+                    return;
+                }
+                body.innerHTML = data.items.map(i => `
+                    <tr>
+                        <td class="td-profile">${esc(i.id)}</td>
+                        <td class="td-name"><a href="/api/admin/contributions/${esc(i.id)}/file" style="color:var(--klein-blue);">${esc(i.orig)}</a></td>
+                        <td>${fmtSize(i.size)}</td>
+                        <td>${esc(i.name)}</td>
+                        <td class="td-content">${esc(i.note || '—')}</td>
+                        <td class="td-profile">${esc(i.ip || '')}</td>
+                        <td class="td-time">${esc(i.time)}</td>
+                        <td><button class="btn btn-danger btn-mini" onclick="delContrib('${esc(i.id)}')">删除</button></td>
+                    </tr>`).join('');
+            } catch (e) { /* 未登录时由 guard 处理 */ }
+        }
+
+        window.delContrib = async function (id) {
+            if (!confirm('确定删除这份投稿吗？文件将被永久删除。')) return;
+            const res = await fetch('/api/admin/contributions/' + encodeURIComponent(id), { method: 'DELETE' });
+            if (res.ok) { toast('投稿已删除'); loadContribs(); } else toast('删除失败');
+        };
+
+        // ---------- 登录 ----------
+        const loginMask = document.getElementById('loginMask');
+
+        function showLogin() {
+            loginMask.classList.add('show');
+            document.getElementById('btnLogout').style.display = 'none';
+            document.getElementById('loginUser').focus();
+        }
+        function hideLogin() {
+            loginMask.classList.remove('show');
+            document.getElementById('btnLogout').style.display = 'inline-block';
+        }
+        function guard(res) {
+            if (res.status === 401) { showLogin(); throw new Error('未登录'); }
+            return res;
+        }
+
+        async function tryLogin() {
+            const err = document.getElementById('loginErr');
+            err.textContent = '';
+            const btn = document.getElementById('btnLogin');
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('loginUser').value.trim(),
+                        password: document.getElementById('loginPass').value
+                    })
+                });
+                if (res.ok) {
+                    document.getElementById('loginPass').value = '';
+                    hideLogin();
+                    loadStats(); loadMessages(); loadPeople(); loadContribs();
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    err.textContent = data.error || '登录失败';
+                }
+            } catch (e) {
+                err.textContent = '无法连接后端服务';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        document.getElementById('btnLogin').addEventListener('click', tryLogin);
+        ['loginUser', 'loginPass'].forEach(id =>
+            document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); }));
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            showLogin();
+        });
+
+        // 初始化：先检查登录态
+        fetch('/api/auth/check').then(r => r.json()).then(d => {
+            if (d.ok) { hideLogin(); loadStats(); loadMessages(); loadPeople(); loadContribs(); }
+            else showLogin();
+        }).catch(showLogin);
+    </script>
+</body>
+</html>
