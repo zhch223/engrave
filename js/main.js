@@ -1,4 +1,4 @@
-// 星语铭 - GitHub Pages 主页面 JavaScript
+// 星语铭 - 主页面 JavaScript
 
 // 全局缓存，避免重复请求
 let cachedProfiles = [];
@@ -221,7 +221,7 @@ function renderAnniversaries() {
     const day = today.getDate();
     
     const todayProfiles = cachedProfiles.filter(p => {
-        if (!p.passDate) return false;
+        if (!p.passDate || p.watcher) return false;  // 守夜人（watcher: true）不进祭日区
         const parts = p.passDate.split('-');
         if (parts.length !== 3) return false;
         return parseInt(parts[1]) === month && parseInt(parts[2]) === day;

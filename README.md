@@ -132,7 +132,7 @@ python backend/server.py
 使用标准 Markdown 语法引用图片：
 
 ```markdown
-![图片描述](https://raw.githubusercontent.com/engrave-ren/engrave-ren/main/data/people/[人物ID]/resources/图片文件名.jpg)
+![图片描述](https://raw.githubusercontent.com/zhch223/engrave/main/data/people/[人物ID]/resources/图片文件名.jpg)
 ```
 
 ---
@@ -142,7 +142,7 @@ python backend/server.py
 使用链接方式引用视频文件：
 
 ```markdown
-[视频标题](https://cdn.jsdelivr.net/gh/engrave-ren/engrave-ren@main/data/people/[人物ID]/resources/视频文件名.mp4)
+[视频标题](https://cdn.jsdelivr.net/gh/zhch223/engrave@main/data/people/[人物ID]/resources/视频文件名.mp4)
 ```
 
 ---

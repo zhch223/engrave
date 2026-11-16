@@ -1,10 +1,10 @@
-// 星语铭 - GitHub Pages 个人主页 JavaScript
+// 星语铭 - 个人主页 JavaScript
 
 // ==================== 评论系统配置 ====================
 const COMMENT_CONFIG = {
     system: 'utterances',
     utterances: {
-        repo: 'engrave-ren/engrave-ren',
+        repo: 'zhch223/engrave',
         issueTerm: 'url',
         label: 'comment',
         theme: 'github-light'

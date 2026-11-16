@@ -67,11 +67,11 @@
                 <form class="contrib-form" id="contribForm">
                     <input type="text" id="fName" maxlength="32" placeholder="你的昵称（留空则为匿名）">
                     <textarea id="fNote" maxlength="200" placeholder="备注说明（可选）：这份资料是什么、与谁有关…"></textarea>
-                    <div class="file-zone" id="fileZone">
+                    <label class="file-zone" id="fileZone" for="fFile">
                         点击选择文件，或把文件拖到这里<br>
                         <small>任意类型均可 · 单文件 ≤ 200MB</small>
-                    </div>
-                    <input type="file" id="fFile" required style="display:none;">
+                    </label>
+                    <input type="file" id="fFile" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; clip:rect(0 0 0 0);">
                     <div class="file-selected" id="fileInfo" style="display:none;"></div>
                     <div class="progress-wrap" id="progWrap"><div class="progress-bar" id="progBar"></div></div>
                     <div class="progress-text" id="progText"></div>
@@ -99,8 +99,10 @@
         var progWrap = document.getElementById('progWrap');
         var progBar = document.getElementById('progBar');
         var progText = document.getElementById('progText');
+        var selectedFile = null;   // 记住选中的文件（不依赖 input.files）
 
         function fmtSize(n) {
+            if (n >= 1073741824) return (n / 1073741824).toFixed(2) + ' GB';
             if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
             if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
             return n + ' B';
@@ -109,20 +111,28 @@
         function pickFile(f) {
             msg.textContent = ''; msg.className = 'contrib-msg';
             if (!f) return;
+            if (f.size === 0) {
+                selectedFile = null;
+                info.style.display = 'none';
+                msg.textContent = '不能上传空文件';
+                msg.className = 'contrib-msg err';
+                return;
+            }
             if (f.size > MAX) {
+                selectedFile = null;
                 info.style.display = 'none';
                 msg.textContent = '文件过大（' + fmtSize(f.size) + '），投稿上限 200MB';
                 msg.className = 'contrib-msg err';
-                fileInput.value = '';
                 return;
             }
-            fileInput.files = new DataTransfer().files; // 清空
+            selectedFile = f;
             info.style.display = 'block';
             info.textContent = '已选择：' + f.name + '（' + fmtSize(f.size) + '）';
         }
 
-        zone.addEventListener('click', function () { fileInput.click(); });
         fileInput.addEventListener('change', function () { pickFile(this.files[0]); });
+
+        // 拖拽上传
         ['dragover', 'dragenter'].forEach(function (ev) {
             zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('drag'); });
         });
@@ -130,16 +140,12 @@
             zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('drag'); });
         });
         zone.addEventListener('drop', function (e) {
-            var f = e.dataTransfer.files[0];
-            try {
-                var dt = new DataTransfer(); dt.items.add(f); fileInput.files = dt.files;
-            } catch (err) { fileInput.files = e.dataTransfer.files; }
-            pickFile(f);
+            pickFile(e.dataTransfer.files[0]);
         });
 
         document.getElementById('contribForm').addEventListener('submit', function (e) {
             e.preventDefault();
-            var f = fileInput.files[0];
+            var f = selectedFile || (fileInput.files && fileInput.files[0]);
             if (!f) { msg.textContent = '请先选择文件'; msg.className = 'contrib-msg err'; return; }
             if (f.size > MAX) { msg.textContent = '文件超过 200MB 上限'; msg.className = 'contrib-msg err'; return; }
 
@@ -150,6 +156,7 @@
 
             btn.disabled = true;
             progWrap.style.display = 'block';
+            progBar.style.width = '0%';
             msg.textContent = ''; msg.className = 'contrib-msg';
 
             var xhr = new XMLHttpRequest();
@@ -166,16 +173,18 @@
                 var data = {};
                 try { data = JSON.parse(xhr.responseText); } catch (err) {}
                 if (xhr.status === 201) {
-                    progText.textContent = '';
+                    progBar.style.width = '100%';
+                    progText.textContent = '上传完成 ✓';
                     msg.textContent = '✓ 投稿成功！编号 ' + data.id + '，感谢你的分享 🌸';
                     msg.className = 'contrib-msg ok';
+                    selectedFile = null;
                     fileInput.value = ''; info.style.display = 'none';
                     document.getElementById('fNote').value = '';
-                    progWrap.style.display = 'none';
+                    setTimeout(function () { progWrap.style.display = 'none'; progText.textContent = ''; }, 2000);
                 } else {
+                    progWrap.style.display = 'none';
                     msg.textContent = data.error || ('提交失败（HTTP ' + xhr.status + '）');
                     msg.className = 'contrib-msg err';
-                    progWrap.style.display = 'none';
                 }
             };
             xhr.onerror = function () {
