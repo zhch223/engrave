@@ -1,77 +1,68 @@
 # 星语铭 (engrave.ren)
 
-一座以星光为墨、以记忆为碑的数字纪念网站——用于纪念那些已经离开的人。
+纪念逝者的网站。原站由晴樱Novi搭建，现在这版是她备考期间由氢氧根重建的，前后端分离，后端只用了 Python 标准库，没有第三方依赖。
 
-本项目为前后端分离版本：前端为纯静态站点，后端（Python 标准库，零第三方依赖）提供留言 API、资料卡管理、投稿接收与管理后台，单端口部署，支持局域网 / 端口映射访问。
+仓库描述里的"站长仍是晴樱Novi"，不是客套话。
 
-## 本地运行
+## 跑起来
 
 ```bash
 python backend/server.py
 ```
 
-启动后只有一个服务，端口 8080：
+一个服务全包了，端口 8080：
 
-- 前台站点：http://127.0.0.1:8080/
-- 管理后台：http://127.0.0.1:8080/admin （需登录）
-- 手机访问：同一局域网内访问 `http://<电脑IP>:8080/`，或通过端口映射入口访问（留言、投稿均为同源请求，任何入口通用）
+- 网站本身：http://127.0.0.1:8080/
+- 后台：http://127.0.0.1:8080/admin （要登录）
+- 手机：同一局域网访问 `http://电脑IP:8080/`，或者走端口映射。留言和投稿都是同源请求，怎么进来都行
 
-账号配置在 `backend/auth.json`（首次启动自动生成默认账号 `admin` / `admin123`，请尽快修改）。
+账号在 `backend/auth.json`，第一次启动会生成默认的 `admin` / `admin123`，用之前先改掉。
 
-## 目录结构
+## 文件结构
 
 ```
 /
-├── index.html              # 首页 - 显示纪念人物列表
-├── profile.html            # 个人纪念页面
-├── contribute.html         # 投稿提交页（任意类型文件，单文件 ≤ 200MB）
-├── about.html              # 关于页面
-├── compliance.html         # 合规声明
-├── 404.html                # 404 错误页面
-├── css/
-│   └── style.css          # 样式文件（含手机端响应式适配）
+├── index.html              # 首页（人物列表、今日生日/祭日）
+├── profile.html            # 个人页
+├── contribute.html         # 投稿页
+├── about.html / compliance.html / 404.html
+├── css/style.css          # 全站样式（带手机端适配）
 ├── js/
-│   ├── main.js            # 首页 JavaScript
-│   ├── profile.js         # 个人页面 JavaScript
-│   └── guestbook.js       # 留言板组件（替代原 Utterances 评论）
-├── images/
-│   └── default-avatar.svg # 默认头像
+│   ├── main.js            # 首页逻辑
+│   ├── profile.js         # 个人页逻辑
+│   └── guestbook.js       # 留言板
 ├── data/
-│   ├── profiles.json      # 纪念人物 ID 列表
-│   └── people/
-│       └── [人物ID]/
-│           ├── resources/
-│           │   └── xxx.xxx # 资源文件（照片，视频等）
-│           ├── info.json  # 基本信息
-│           ├── bio.md     # 生平介绍 (Markdown)
-│           └── avatar.jpg # 头像图片
+│   ├── profiles.json      # 人物 ID 列表
+│   └── people/<人物ID>/
+│       ├── info.json      # 基本信息
+│       ├── bio.md         # 生平（Markdown）
+│       ├── avatar.jpg     # 头像
+│       └── resources/     # 照片、视频等资料
 └── backend/
-    ├── server.py          # 后端：静态服务 + API + 管理后台（单端口全包）
-    ├── admin.html         # 管理后台界面（留言 / 资料卡 / 投稿 三大模块）
-    ├── auth.json          # 登录账号配置
-    ├── messages.json      # 留言数据
-    ├── contributions.json # 投稿登记
-    └── contributions/     # 投稿文件存放处
+    ├── server.py          # 后端：静态服务 + API + 管理后台
+    ├── admin.html         # 后台界面（留言/资料卡/投稿三个模块）
+    ├── auth.json          # 登录账号（不入库）
+    ├── messages.json      # 留言数据（不入库）
+    └── contributions/     # 投稿文件（不入库）
 ```
 
-## 管理后台
+## 后台能干什么
 
-访问 `/admin` 登录后可使用三个模块：
+浏览器开 `/admin`，登录后三个标签页：
 
-- **留言管理**：统计概览、按人物/关键词筛选、删除留言、清空
-- **资料卡管理**：直接编辑 info.json 各字段与 bio.md 生平、上传头像、新建/删除人物（保存后前台刷新即生效）
-- **投稿管理**：查看投稿列表（文件名/大小/投稿人/备注/IP/时间），在线下载、删除
+- 留言管理：看留言、删留言、按人物清空
+- 资料卡管理：改 info.json 的字段、写 bio.md、传头像、传资源文件（进 `resources/`）、直接编辑原文件（txt/md/json）
+- 投稿管理：看投稿、下载、删
 
-留言与投稿接口为公开接口；所有管理接口需登录（会话 Cookie，24 小时有效）。
+留言和投稿接口是公开的，管理接口全部要登录（会话 24 小时过期）。
 
-## 添加新人物
+## 加新人物
 
-推荐在管理后台「资料卡管理」中直接新建；也可手动操作：
+后台「资料卡管理」里点新建就行。想手动加也可以：
 
-1. 在 `data/people/` 下创建新文件夹，文件夹名称即为人物 ID（请使用全小写）
-2. 创建 `info.json` - 基本信息
-3. 创建 `bio.md` - 生平介绍（支持完整 Markdown 语法）
-4. 添加 `avatar.jpg` - 头像图片（可选）
+1. `data/people/` 下建文件夹，文件夹名就是人物 ID（小写）
+2. 写 `info.json`、`bio.md`，头像可选 `avatar.jpg`
+3. 把 ID 加进 `data/profiles.json`
 
 ### info.json 格式
 
@@ -84,73 +75,29 @@ python backend/server.py
   "location": "示例地点",
   "birthDate": "2000-01-01",
   "passDate": "2024-01-01",
-  "summary": "一言总结/引用语句",
+  "summary": "一句话",
   "websites": [
-    "[网站名称](https://example.com)",
-    "[B站](https://bilibili.com)",
-    "[GitHub](https://github.com)"
+    "[网站名称](https://example.com)"
   ],
   "sources": [
-    "[新闻报道](https://example.com/news)",
-    "[纪念文章](https://example.com/memorial)"
+    "[新闻报道](https://example.com/news)"
   ]
 }
 ```
 
-**字段说明：**
-- `id` - 人物唯一标识（文件夹名称）（请使用全小写）
-- `name` - 姓名
-- `handle` - 昵称/用户名
-- `aliases` - 别名（多个用逗号分隔）
-- `location` - 地点
-- `birthDate` - 出生日期 (YYYY-MM-DD)
-- `passDate` - 离开日期 (YYYY-MM-DD)
-- `summary` - 一言总结/引用（显示在首页卡片）
-- `websites` - 网站链接数组，格式：`[显示名称](链接)`
-- `sources` - 引用资料链接数组，格式：`[显示名称](链接)`
+字段就这些：`id` 是文件夹名，`birthDate`/`passDate` 用 `YYYY-MM-DD`。首页的「今日生日」「今日祭日」靠这两个日期驱动——到月对日就显示，忽略年份。守夜人（还在世的管理员）在 info.json 里加 `"watcher": true`，祭日区会自动跳过。
 
-### 更新人物列表
+## bio.md 里放图片和视频
 
-在 `data/profiles.json` 中添加人物 ID：
-
-```json
-["example", "gqt", "zhangyubaka", "新人物ID"]
-```
-
-## 投稿系统
-
-前台「投稿」页（导航栏入口）可提交任意类型文件，单文件上限 200MB，支持点击选择与拖拽上传，带实时进度。后端以 multipart 方式接收，超限直接拒绝（HTTP 413）。投稿内容仅管理员在后台可见。
-
-## 留言系统
-
-由 `js/guestbook.js` 提供留言板组件（替代原 Utterances / GitHub Issues 评论），资料页底部渲染，昵称可选（默认匿名），内容限 500 字，HTML 转义防 XSS，数据持久化于 `backend/messages.json`。
-
-## 资源引用
-
-### 图片引用
-
-使用标准 Markdown 语法引用图片：
+文件先传到该人物的 `resources/`（后台可传，或手动拷进去），然后在 bio.md 里：
 
 ```markdown
-![图片描述](https://raw.githubusercontent.com/zhch223/engrave/main/data/people/[人物ID]/resources/图片文件名.jpg)
+![照片说明](/data/people/<人物ID>/resources/photo.jpg)
+[视频标题](/data/people/<人物ID>/resources/clip.mp4)
 ```
 
----
+路径以 `/` 开头。图片会直接显示，视频渲染成链接点开播放。想走外链也可以用 raw.githubusercontent.com（图）和 cdn.jsdelivr.net（视频，快）。
 
-### 视频引用
+## 投稿
 
-使用链接方式引用视频文件：
-
-```markdown
-[视频标题](https://cdn.jsdelivr.net/gh/zhch223/engrave@main/data/people/[人物ID]/resources/视频文件名.mp4)
-```
-
----
-
-### 说明
-
-- **图片**：使用 `![描述](链接)` 语法，图片会直接显示在页面中
-- **视频**：使用 `[标题](链接)` 语法，点击链接可在浏览器中打开播放
-- 本地部署时也可用相对路径直接引用站内资源，如 `data/people/[人物ID]/resources/xxx.jpg`
-- 将 `[人物ID]` 替换为实际的人物文件夹名称
-- 将文件名替换为实际的资源文件名
+导航栏「投稿」进去，任意类型文件，单个 200MB 封顶，有进度条。传的东西只有后台能看到。
