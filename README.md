@@ -101,3 +101,12 @@ python backend/server.py
 ## 投稿
 
 导航栏「投稿」进去，任意类型文件，单个 200MB 封顶，有进度条。传的东西只有后台能看到。
+
+## 数据备份
+
+代码推 GitHub，但下面这些只在本地，建议定期备份：
+
+- `backend/messages.json` —— 所有留言
+- `backend/contributions/` 和 `backend/contributions.json` —— 投稿文件
+- `backend/auth.json` —— 账号配置（备份时注意别外泄）
+- `data/people/` —— 人物资料卡（这个其实也推了 GitHub，但后台改完记得 push）
