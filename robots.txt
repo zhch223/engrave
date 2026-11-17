@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /
+
+# 测试期全站禁止抓取；正式上线时改回：
+# User-agent: *
+# Allow: /
