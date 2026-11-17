@@ -60,7 +60,7 @@ MIME_MAP = {
     ".json": "application/json; charset=utf-8",
     ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
     ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp",
-    ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8",
+    ".ico": "image/x-icon",
     ".md": "text/markdown; charset=utf-8",
     ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf",
 }
