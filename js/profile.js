@@ -243,22 +243,30 @@ function parseMarkdown(text) {
     const html = marked.parse(text);
     return DOMPurify.sanitize(html, {
         ADD_ATTR: ['target'],   // 允许 target 属性
-        ADD_TAGS: ['iframe'],   // 允许 iframe
         FORCE_BODY: true        // 强制解析为完整 HTML
     });
 }
 
-// 显示错误
+// 显示错误（textContent 渲染，防反射 XSS）
 function showError(message) {
-    const content = document.getElementById('profileContent');
     document.getElementById('pageTitle').textContent = '错误 - 星语铭';
-    content.innerHTML = `
-        <div class="error-container">
-            <h1>404</h1>
-            <p>${message}</p>
-            <a href="/" class="btn">返回首页</a>
-        </div>
-    `;
+    const content = document.getElementById('profileContent');
+    content.textContent = '';
+
+    const box = document.createElement('div');
+    box.className = 'error-container';
+    const h = document.createElement('h1');
+    h.textContent = '404';
+    const p = document.createElement('p');
+    p.textContent = message;   // 纯文本插入，profileId 不进 innerHTML
+    const a = document.createElement('a');
+    a.href = '/';
+    a.className = 'btn';
+    a.textContent = '返回首页';
+    box.appendChild(h);
+    box.appendChild(p);
+    box.appendChild(a);
+    content.appendChild(box);
 }
 
 // 页面加载完成后执行

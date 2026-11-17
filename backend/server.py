@@ -69,6 +69,22 @@ _lock = threading.Lock()
 SESSION_TTL = 24 * 3600  # 会话有效期 24 小时
 SESSIONS = {}            # token -> 过期时间戳
 
+# 限流：(类别, IP) -> [时间戳]，滑动窗口
+RATE_LIMITS = {}
+MAX_MESSAGES = 5000      # 留言总量上限，防撑爆存储
+
+
+def _rate_ok(bucket, ip, limit, window):
+    now = time.time()
+    key = (bucket, ip)
+    lst = [t for t in RATE_LIMITS.get(key, []) if now - t < window]
+    if len(lst) >= limit:
+        RATE_LIMITS[key] = lst
+        return False
+    lst.append(now)
+    RATE_LIMITS[key] = lst
+    return True
+
 # 投稿
 CONTRIB_DIR = os.path.join(BASE_DIR, "contributions")
 CONTRIB_INDEX = os.path.join(BASE_DIR, "contributions.json")
@@ -317,13 +333,12 @@ def _parse_multipart(body, boundary):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "AdminSystem/4.0"
+    server_version = "AdminSystem/4.1"
+    timeout = 30  # socket 读写超时，防 Slowloris 挂起连接
 
     # ---------- 基础 ----------
     def _cors(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        pass  # 同源部署，不再放行任意跨域（Access-Control-Allow-Origin: *）
 
     def _send(self, code, payload, set_cookie=None, clear_cookie=False):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -350,11 +365,15 @@ class Handler(BaseHTTPRequestHandler):
         rel = path.lstrip("/")
         if not rel or path.endswith("/"):
             rel = (rel + "/index.html").lstrip("/")
-        if rel == "backend" or rel.startswith("backend/") or rel.startswith("backend\\"):
+        file_path = os.path.normpath(os.path.join(FRONTEND_ROOT, rel))
+        # 黑名单必须在 normpath 之后判断，否则 backend/../ 等形式会绕过拦截
+        try:
+            norm_rel = os.path.relpath(file_path, FRONTEND_ROOT)
+        except ValueError:
             self._send(403, {"error": "forbidden"})
             return
-        file_path = os.path.normpath(os.path.join(FRONTEND_ROOT, rel))
-        if not file_path.startswith(FRONTEND_ROOT):
+        parts = norm_rel.split(os.sep)
+        if norm_rel.startswith("..") or "backend" in parts or ".git" in parts:
             self._send(403, {"error": "forbidden"})
             return
         if os.path.isdir(file_path):
@@ -369,6 +388,9 @@ class Handler(BaseHTTPRequestHandler):
             body = f.read()
         self.send_response(200 if not file_path.endswith("404.html") else 404)
         self.send_header("Content-Type", MIME_MAP.get(ext, "application/octet-stream"))
+        if ext == ".svg" or (ext in (".html", ".htm") and parts[0] == "data"):
+            # SVG 与上传的 HTML 内联脚本可执行，加 CSP sandbox 禁脚本（正常显示不受影响）
+            self.send_header("Content-Security-Policy", "sandbox")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -554,6 +576,9 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path == "/api/login":
+            if not _rate_ok("login", self.client_address[0], 5, 300):
+                self._send(429, {"error": "尝试过于频繁，请 5 分钟后再试"})
+                return
             data, err = self._read_json_body()
             if err:
                 self._send(400, {"error": err})
@@ -574,6 +599,9 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/messages":
+            if not _rate_ok("msg", self.client_address[0], 5, 60):
+                self._send(429, {"error": "发送太频繁，休息一下再留言吧"})
+                return
             data, err = self._read_json_body()
             if err:
                 self._send(400, {"error": err})
@@ -602,6 +630,9 @@ class Handler(BaseHTTPRequestHandler):
             }
             with _lock:
                 messages = _load_messages()
+                if len(messages) >= MAX_MESSAGES:
+                    self._send(429, {"error": "留言已达总量上限，请联系管理员清理"})
+                    return
                 messages.append(message)
                 _save_messages(messages)
             self._send(201, {"ok": True, "message": message})
