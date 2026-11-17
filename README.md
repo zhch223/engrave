@@ -4,6 +4,12 @@
 
 仓库描述里的"站长仍是晴樱Novi"，不是客套话。
 
+## 原项目
+
+本站的原始版本出自 [engrave-ren/engrave-ren](https://github.com/engrave-ren/engrave-ren)，由晴樱Novi搭建的纯静态站。原版完整代码保留在本仓库的 [`original` 分支](https://github.com/zhch223/engrave/tree/original)，提交历史原样保留，没有改动。
+
+现在看到的 main 分支是在原版基础上改造的：加了后端、后台管理、留言和投稿系统，页面结构和视觉风格沿用原站。
+
 ## 跑起来
 
 ```bash
