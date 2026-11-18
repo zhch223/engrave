@@ -1,4 +1,4 @@
-# 星语铭 (engrave.ren)
+# 星语铭 (engrave.xin)
 
 纪念逝者的网站。原站由晴樱Novi搭建，现在这版是她备考期间由氢氧根重建的，前后端分离，后端只用了 Python 标准库，没有第三方依赖。
 
@@ -9,6 +9,8 @@
 本站的原始版本出自 [engrave-ren/engrave-ren](https://github.com/engrave-ren/engrave-ren)，由晴樱Novi搭建的纯静态站。原版完整代码保留在本仓库的 [`original` 分支](https://github.com/zhch223/engrave/tree/original)，提交历史原样保留，没有改动。
 
 现在看到的 main 分支是在原版基础上改造的：加了后端、后台管理、留言和投稿系统，页面结构和视觉风格沿用原站。
+
+站点域名已由原址 **engrave.ren** 迁移至 **engrave.xin**，原域名不再由本站使用。
 
 ## 跑起来
 
