@@ -37,13 +37,14 @@ import os
 import re
 import secrets
 import shutil
+import sys
 import threading
 import time
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, quote, unquote
 
-PORT = 8080
+PORT = 80  # 默认 80 端口，可用命令行参数覆盖：python server.py 8080
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "messages.json")
 ADMIN_FILE = os.path.join(BASE_DIR, "admin.html")
@@ -938,8 +939,25 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        try:
+            PORT = int(sys.argv[1])
+        except ValueError:
+            print(f"无效端口: {sys.argv[1]}")
+            sys.exit(1)
     _ensure_auth_file()
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)  # 监听所有网卡，允许手机等局域网设备访问
+    try:
+        server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)  # 监听所有网卡，允许手机等局域网设备访问
+    except OSError as e:
+        print(f"端口 {PORT} 启动失败: {e}")
+        if PORT == 80:
+            print("80 端口通常被 IIS/HTTP.sys 占用，以管理员身份执行以下命令停用 IIS：")
+            print("  net stop w3svc")
+            print("  net stop was")
+            print("  sc config w3svc start= disabled")
+            print("  sc config was start= disabled")
+        print(f"或改用其他端口启动: python server.py 8080")
+        sys.exit(1)
     print(f"星语铭后端管理系统已启动")
     print(f"  站点首页: http://127.0.0.1:{PORT}/")
     print(f"  管理后台: http://127.0.0.1:{PORT}/admin （需登录）")
