@@ -63,6 +63,8 @@ MIME_MAP = {
     ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp",
     ".ico": "image/x-icon",
     ".md": "text/markdown; charset=utf-8",
+    ".xml": "application/xml; charset=utf-8",
+    ".txt": "text/plain; charset=utf-8",
     ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf",
 }
 
@@ -408,6 +410,27 @@ class Handler(BaseHTTPRequestHandler):
     def _is_authed(self):
         return _check_session(_session_token(self.headers.get("Cookie")))
 
+    def _serve_sitemap(self):
+        """动态生成 sitemap.xml：固定页面 + 全部资料卡页，人物列表实时读 profiles.json"""
+        base = "https://engrave.xin"
+        entries = [f"  <url><loc>{base}{p}</loc></url>"
+                   for p in ("/", "/about.html", "/compliance.html", "/contribute.html")]
+        try:
+            with open(PROFILES_FILE, "r", encoding="utf-8") as f:
+                ids = json.load(f)
+            entries += [f"  <url><loc>{base}/profile.html?id={quote(str(i))}</loc></url>"
+                        for i in ids]
+        except (OSError, ValueError):
+            pass
+        body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+                + "\n".join(entries) + "\n</urlset>\n").encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/xml; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_OPTIONS(self):
         self.send_response(204)
         self._cors()
@@ -569,6 +592,10 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             with open(fp, "rb") as f:
                 shutil.copyfileobj(f, self.wfile)
+            return
+
+        if path == "/sitemap.xml":
+            self._serve_sitemap()
             return
 
         self._serve_static(path)

@@ -1,6 +1,4 @@
 User-agent: *
-Disallow: /
+Allow: /
 
-# 测试期全站禁止抓取；正式上线时改回：
-# User-agent: *
-# Allow: /
+Sitemap: https://engrave.xin/sitemap.xml
