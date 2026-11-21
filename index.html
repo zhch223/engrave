@@ -46,7 +46,13 @@
             setTimeout(function () { overlay.remove(); }, 700);
         }
         if (sessionStorage.getItem('indexBuilt') === '1') {
-            // 第 9 秒刷新回来后：展示完成状态，随后淡出，本次会话不再出现
+            // 完成提示只展示一次：已展示过就直接移除遮罩，本次会话不再出现
+            if (sessionStorage.getItem('indexShown') === '1') {
+                overlay.remove();
+                return;
+            }
+            sessionStorage.setItem('indexShown', '1');
+            // 第 9 秒刷新回来后：展示完成状态，随后淡出
             title.textContent = '索引构建完成';
             count.parentNode.textContent = '马上就好';
             fill.style.width = '100%';
