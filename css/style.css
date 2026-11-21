@@ -704,6 +704,34 @@ footer a:hover {
     }
 }
 
+/* ==================== 返回主页按钮 ==================== */
+.back-home-bar {
+    text-align: center;
+    padding: 0.9rem 0 0;
+}
+
+.back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 1.1rem;
+    border-radius: 999px;
+    background: var(--pure-white);
+    border: 1px solid var(--border-light);
+    color: var(--text-dark);
+    font-size: 0.9rem;
+    text-decoration: none;
+    box-shadow: 0 1px 4px var(--shadow);
+    transition: all 0.2s ease;
+}
+
+.back-home-btn:hover {
+    background: var(--sky-blue);
+    border-color: var(--sky-blue);
+    color: var(--pure-white);
+    transform: translateY(-1px);
+}
+
 /* ==================== 索引构建过场 ==================== */
 #buildOverlay {
     position: fixed;
