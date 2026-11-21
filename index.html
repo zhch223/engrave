@@ -26,6 +26,52 @@
 </head>
 
 <body>
+    <!-- 索引构建过场（每个会话只出现一次） -->
+    <div id="buildOverlay">
+        <div class="build-box">
+            <div class="build-spinner"></div>
+            <h2 id="buildTitle">索引构建中</h2>
+            <p>预计需要等待 <span id="buildCount">10</span> 秒</p>
+            <div class="build-bar"><div id="buildFill"></div></div>
+        </div>
+    </div>
+    <script>
+    (function () {
+        var overlay = document.getElementById('buildOverlay');
+        var title = document.getElementById('buildTitle');
+        var count = document.getElementById('buildCount');
+        var fill = document.getElementById('buildFill');
+        function hideOverlay() {
+            overlay.classList.add('hide');
+            setTimeout(function () { overlay.remove(); }, 700);
+        }
+        if (sessionStorage.getItem('indexBuilt') === '1') {
+            // 第 9 秒刷新回来后：展示完成状态，随后淡出，本次会话不再出现
+            title.textContent = '索引构建完成';
+            count.parentNode.textContent = '马上就好';
+            fill.style.width = '100%';
+            fill.classList.add('done');
+            setTimeout(hideOverlay, 1200);
+            return;
+        }
+        fill.style.transition = 'width 10s linear';
+        requestAnimationFrame(function () { fill.style.width = '100%'; });
+        var left = 10;
+        var timer = setInterval(function () {
+            left--;
+            if (left <= 0) return;
+            count.textContent = left;
+            if (left === 1) {   // 第 9 秒：标记完成并强制刷新主页
+                clearInterval(timer);
+                title.textContent = '索引构建完成';
+                fill.style.width = '100%';
+                fill.classList.add('done');
+                sessionStorage.setItem('indexBuilt', '1');
+                setTimeout(function () { location.reload(); }, 600);
+            }
+        }, 1000);
+    })();
+    </script>
     <header>
         <nav>
             <div class="logo">星语铭</div>
